@@ -4,7 +4,7 @@ from datetime import datetime          # Ajatempli jaoks
 app = Flask(__name__)                  # Loob Flask rakenduse
 
 @app.route('/')                        # Pealeht: GET /
-def home():
+def home()
     return jsonify({
         'message': 'CI/CD + K8s Demo API',
         'version': '1.0.0',           # Versioon - testid kontrollivad seda!
