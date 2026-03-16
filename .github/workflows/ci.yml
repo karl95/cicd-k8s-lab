@@ -1,21 +1,39 @@
-name: CI/CD Pipeline              # Workflow nimi (nähtav GitHub Actions UI's)
+name: CI/CD Pipeline
 
-on:                                # Millal käivitub?
+on:
   push:
-    branches: [ main ]             # Iga push main branch'i
+    branches: [ main ]
   pull_request:
-    branches: [ main ]             # Iga PR main branch'i vastu
+    branches: [ main ]
 
 jobs:
-  validate:                        # Esimene job: süntaksi kontroll
-    runs-on: ubuntu-latest         # Jookseb GitHub'i Ubuntu VM'is
+  validate:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4  # Kloonib meie repo
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'   # Sama versioon mis Dockerfile'is
+          python-version: '3.11'
 
       - name: Validate Python syntax
-        run: python -m py_compile app.py  # Kompileerib, ei käivita - leiab süntaksivead
+        run: python -m py_compile app.py
+
+  test:
+    needs: validate                # Jookseb AINULT kui validate läbib
+    runs-on: ubuntu-latest         # Iga job saab puhtalt uue VM'i
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'             # Vahemälustab pip pakette (kiirendab)
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt  # Flask + pytest
+
+      - name: Run tests
+        run: pytest test_app.py -v  # -v = verbose, näitab iga testi tulemust
