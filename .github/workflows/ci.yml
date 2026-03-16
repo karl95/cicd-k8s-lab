@@ -1,10 +1,5 @@
 name: CI/CD Pipeline
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
  build:
     needs: test                    # Jookseb ainult kui testid läbivad
     runs-on: ubuntu-latest
