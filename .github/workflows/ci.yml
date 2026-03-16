@@ -1,5 +1,5 @@
 name: CI/CD Pipeline
-
+jobs:
  build:
     needs: test                    # Jookseb ainult kui testid läbivad
     runs-on: ubuntu-latest
