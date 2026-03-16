@@ -1,0 +1,21 @@
+name: CI/CD Pipeline              # Workflow nimi (nähtav GitHub Actions UI's)
+
+on:                                # Millal käivitub?
+  push:
+    branches: [ main ]             # Iga push main branch'i
+  pull_request:
+    branches: [ main ]             # Iga PR main branch'i vastu
+
+jobs:
+  validate:                        # Esimene job: süntaksi kontroll
+    runs-on: ubuntu-latest         # Jookseb GitHub'i Ubuntu VM'is
+    steps:
+      - uses: actions/checkout@v4  # Kloonib meie repo
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'   # Sama versioon mis Dockerfile'is
+
+      - name: Validate Python syntax
+        run: python -m py_compile app.py  # Kompileerib, ei käivita - leiab süntaksivead
