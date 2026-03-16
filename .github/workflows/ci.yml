@@ -1,3 +1,4 @@
+name: CI/CD Pipeline
   build:
     needs: test                    # Jookseb ainult kui testid läbivad
     runs-on: ubuntu-latest
