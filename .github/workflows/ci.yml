@@ -1,46 +1,54 @@
 name: CI/CD Pipeline
-  build:
-    needs: test                    # Jookseb ainult kui testid läbivad
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'  # Ainult main branch (mitte PR'id)
-    permissions:                   # Õigused GHCR'i push'imiseks
-      contents: read               # Repo sisu lugemine
-      packages: write              # Container registry kirjutamine
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Login to GitHub Container Registry
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io        # GitHub'i enda container registry
-          username: ${{ github.actor }}      # Automaatne: kes push'is
-          password: ${{ secrets.GITHUB_TOKEN }}  # Automaatne: GitHub'i token
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set Image Name
+        run: echo "IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]' >> $GITHUB_ENV
 
       - name: Build Docker image
         run: |
-          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"  # ,, = lowercase (GHCR nõuab)
-          docker build -t $IMAGE:${{ github.sha }} .  # Tag commit hash'iga (unikaalne)
-          docker build -t $IMAGE:latest .             # Tag latest (mugavuse jaoks)
+          docker build -t ${{ env.IMAGE_NAME }}:${{ github.sha }} -t ${{ env.IMAGE_NAME }}:latest .
 
-      - name: Test Docker image
+      - name: Test Docker image (Integration)
         run: |
-          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}":${{ github.sha }}
-          docker run -d -p 5000:5000 --name test-container $IMAGE  # Käivitab konteineri
-          sleep 5                  # Ootab et rakendus jõuaks käivituda
-
-          if curl -f http://localhost:5000/health; then  # -f = fail on HTTP error
+          docker run -d -p 5000:5000 --name test-app ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          sleep 5
+          if curl -f http://localhost:5000/health; then
             echo "Health check passed"
           else
             echo "Health check FAILED"
-            docker logs test-container  # Näitab miks konteiner crashis
-            exit 1                     # Lõpetab pipeline punasega
+            docker logs test-app
+            exit 1
           fi
-
-          docker stop test-container
-          docker rm test-container     # Koristab pärast testi
+          docker stop test-app
+          docker rm test-app
 
       - name: Push Docker image
+        # Only push if it's a merge/push to main, not just a PR
+        if: github.ref == 'refs/heads/main'
         run: |
-          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
-          docker push $IMAGE:${{ github.sha }}  # Push'ib mõlemad tag'id
-          docker push $IMAGE:latest
+          docker push ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.IMAGE_NAME }}:latest
