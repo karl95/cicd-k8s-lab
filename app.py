@@ -19,7 +19,7 @@ def health():                          # K8s ja CI pipeline kasutavad seda
 def products():
     return jsonify([
         {'id': 1, 'name': 'Laptop', 'price': 999},
-        {'id': 2, 'name': 'Phone', 'price': -599}   # Seda hinda muudame hiljem testiks
+        {'id': 2, 'name': 'Phone', 'price': 599}   # Seda hinda muudame hiljem testiks
     ])
 
 if __name__ == '__main__':
