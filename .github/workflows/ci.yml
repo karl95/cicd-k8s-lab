@@ -2,22 +2,57 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
-  # Note: You mentioned 'needs: test', so ensure you have a 'test' job defined 
-  # or remove that line if testing is handled within the build steps.
+
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validate Python syntax
+        run: python -m py_compile app.py
+
+
+  test:
+    needs: validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest test_app.py -v
+
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+
     permissions:
       contents: read
       packages: write
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -28,16 +63,16 @@ jobs:
 
       - name: Build Docker image
         run: |
-          # Convert repository name to lowercase for GHCR compatibility
-          IMAGE_NAME=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          docker build -t $IMAGE_NAME:${{ github.sha }} -t $IMAGE_NAME:latest .
-          # Store the name for subsequent steps
-          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          docker build -t $IMAGE:${{ github.sha }} .
+          docker build -t $IMAGE:latest .
 
       - name: Test Docker image
         run: |
-          docker run -d -p 5000:5000 --name test-container ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}:${{ github.sha }}"
+          docker run -d -p 5000:5000 --name test-container $IMAGE
           sleep 5
+
           if curl -f http://localhost:5000/health; then
             echo "Health check passed"
           else
@@ -51,5 +86,6 @@ jobs:
 
       - name: Push Docker image
         run: |
-          docker push ${{ env.IMAGE_NAME }}:${{ github.sha }}
-          docker push ${{ env.IMAGE_NAME }}:latest
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          docker push $IMAGE:${{ github.sha }}
+          docker push $IMAGE:latest

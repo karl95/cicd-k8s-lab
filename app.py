@@ -1,26 +1,26 @@
-from flask import Flask, jsonify       # Flask veebiraamistik, jsonify teeb dict -> JSON
-from datetime import datetime          # Ajatempli jaoks
+from flask import Flask, jsonify
+from datetime import datetime
 
-app = Flask(__name__)                  # Loob Flask rakenduse
+app = Flask(__name__)
 
-@app.route('/')                        # Pealeht: GET /
+@app.route('/')
 def home():
     return jsonify({
         'message': 'CI/CD + K8s Demo API',
-        'version': '1.0.0',           # Versioon - testid kontrollivad seda!
+        'version': '1.0.0',
         'timestamp': str(datetime.now())
     })
 
-@app.route('/health')                  # Health check: GET /health
-def health():                          # K8s ja CI pipeline kasutavad seda
-    return jsonify({'status': 'healthy'}), 200  # 200 = OK
+@app.route('/health')
+def health():
+    return jsonify({'status': 'healthy'}), 200
 
-@app.route('/products')                # Toodete nimekiri: GET /products
+@app.route('/products')
 def products():
     return jsonify([
         {'id': 1, 'name': 'Laptop', 'price': 999},
-        {'id': 2, 'name': 'Phone', 'price': 599}   # Seda hinda muudame hiljem testiks
+        {'id': 2, 'name': 'Phone', 'price': 599}
     ])
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000) # 0.0.0.0 = kuulab kõigil IP'del (vajalik Docker'is)
+    app.run(host='0.0.0.0', port=5000)
