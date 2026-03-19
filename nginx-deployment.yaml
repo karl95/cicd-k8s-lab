@@ -1,0 +1,26 @@
+apiVersion: apps/v1                # API versioon (apps/v1 Deployment'ide jaoks)
+kind: Deployment                   # Ressursi tüüp
+metadata:
+  name: nginx-deploy               # Deployment'i nimi (kubectl get deployments)
+spec:
+  replicas: 3                      # Mitu Pod'i alati töös peab olema
+  selector:
+    matchLabels:
+      app: nginx                   # Selector: milliseid Pod'e see Deployment haldab
+  template:                        # Pod'i mall (template) - sellest luuakse Pod'id
+    metadata:
+      labels:
+        app: nginx                 # Label PEAB klapima selector'iga! (levinuim viga)
+    spec:
+      containers:
+        - name: nginx              # Konteineri nimi Pod'i sees
+          image: nginx:1.25        # Docker image ja versioon
+          ports:
+            - containerPort: 80    # Port mida konteiner kuulab
+          resources:
+            requests:              # Minimaalsed ressursid (K8s garanteerib need)
+              memory: "32Mi"
+              cpu: "50m"           # 50 millicores = 5% ühest CPU tuumast
+            limits:                # Maksimaalsed ressursid (K8s tapab kui ületab)
+              memory: "64Mi"
+              cpu: "100m"

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-nodeport
+spec:
+  selector:
+    app: nginx                     # Sama selector mis ClusterIP'l
+  ports:
+    - port: 80                     # Service'i port (klastri sees)
+      targetPort: 80               # Konteineri port
+      nodePort: 30080              # Väline port (30000-32767 vahemik)
+  type: NodePort                   # Avab pordi node'i IP'l (väljast kättesaadav)

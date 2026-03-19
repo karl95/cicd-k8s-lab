@@ -1,0 +1,11 @@
+apiVersion: v1                     # Core API (Service on põhiressurss)
+kind: Service
+metadata:
+  name: nginx-service              # DNS nimi klastris (Pod'id kasutavad seda)
+spec:
+  selector:
+    app: nginx                     # Leiab Pod'id selle label'iga
+  ports:
+    - port: 80                     # Port millel Service kuulab
+      targetPort: 80               # Port kuhu suunab (konteineri port)
+  type: ClusterIP                  # Ainult klastri sees kättesaadav (vaikimisi)

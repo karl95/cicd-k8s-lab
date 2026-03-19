@@ -1,0 +1,59 @@
+# --- RESSURSS 1: Secret (parool) ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+type: Opaque                       # Opaque = üldine Secret tüüp
+data:
+  password: cGFzc3dvcmQxMjM=      # "password123" base64 kodeeritult (echo -n password123 | base64)
+---
+# --- RESSURSS 2: Deployment (andmebaas) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 1                      # Andmebaas = alati 1 replika (andmed!)
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:14-alpine  # Alpine = väiksem image
+          env:                       # Keskkonnamuutujad (PostgreSQL seadistus)
+            - name: POSTGRES_DB
+              value: "testdb"        # Loob selle andmebaasi automaatselt
+            - name: POSTGRES_USER
+              value: "testuser"
+            - name: POSTGRES_PASSWORD
+              valueFrom:             # Parool tuleb Secret'ist, mitte otse YAML'ist
+                secretKeyRef:
+                  name: postgres-secret  # Viitab ülal loodud Secret'ile
+                  key: password          # Võtme nimi Secret'is
+          ports:
+            - containerPort: 5432    # PostgreSQL vaikeport
+          resources:
+            requests:                # Minimaalsed garanteeritud ressursid
+              memory: "128Mi"
+              cpu: "100m"
+            limits:                  # Maksimaalsed lubatud ressursid
+              memory: "256Mi"
+              cpu: "200m"
+---
+# --- RESSURSS 3: Service (võrguühendus) ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service           # DNS nimi: teised Pod'id ühenduvad siia
+spec:
+  selector:
+    app: postgres                  # Leiab PostgreSQL Pod'i
+  ports:
+    - port: 5432                   # Service kuulab samal pordil
+      targetPort: 5432             # Suunab konteineri porti
+  type: ClusterIP                  # Ainult klastri sees (andmebaas ei tohi olla väljas!)
